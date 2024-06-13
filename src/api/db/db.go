@@ -2,27 +2,35 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"os"
 
+	"github.com/kylerequez/make-you-work-app/src/api/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var dbClient *mongo.Client
 
+type DBCredentials struct {
+	host string
+	port string
+	uri  string
+}
+
 func ConnectDB() error {
 	log.Println(":::-::: Connecting to DB...")
-	var dbHost, dbPort, dbString = os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_URI_TEMPLATE")
+	credentials, err := GetDBCredentials()
+	if err != nil {
+		return err
+	}
 
-	var dbURI string = fmt.Sprintf(dbString, dbHost, dbPort)
+	uri := fmt.Sprintf(credentials.uri, credentials.host, credentials.port)
 
-	clientOpts := options.Client().ApplyURI(dbURI)
+	clientOpts := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(context.TODO(), clientOpts)
 	if err != nil {
-		return errors.New(err.Error())
+		return err
 	}
 
 	dbClient = client
@@ -37,4 +45,25 @@ func CloseDB() error {
 
 func GetDB(database string) *mongo.Database {
 	return dbClient.Database(database)
+}
+
+func GetDBCredentials() (*DBCredentials, error) {
+	host, err := utils.GetEnv("DB_HOST")
+	if err != nil {
+		return nil, err
+	}
+	port, err := utils.GetEnv("DB_PORT")
+	if err != nil {
+		return nil, err
+	}
+	uri, err := utils.GetEnv("DB_URI_TEMPLATE")
+	if err != nil {
+		return nil, err
+	}
+
+	return &DBCredentials{
+		host: *host,
+		port: *port,
+		uri:  *uri,
+	}, nil
 }

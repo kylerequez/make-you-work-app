@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -10,12 +9,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func GenerateJWT(user *models.User) (*string, error) {
-	key := os.Getenv("JWT_KEY")
-	if key == "" {
-		return nil, errors.New("there was an error in retrieving the JWT key")
+func GetJWTKey() (*string, error) {
+	key, err := GetEnv("JWT_KEY")
+	if err != nil {
+		return nil, err
 	}
-	signingKey := []byte(key)
+	return key, nil
+}
+
+func GenerateJWT(user *models.User) (*string, error) {
+	key, err := GetJWTKey()
+	if err != nil {
+		return nil, err
+	}
+	signingKey := []byte(*key)
 
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
@@ -80,11 +87,11 @@ func RetrieveAuthorities(claims jwt.MapClaims) []interface{} {
 }
 
 func RetriveJwtToken(tokenString string) (*jwt.Token, error) {
-	key := os.Getenv("JWT_KEY")
-	if key == "" {
-		return nil, errors.New("there was an error in retrieving the JWT key")
+	key, err := GetJWTKey()
+	if err != nil {
+		return nil, err
 	}
-	signingKey := []byte(key)
+	signingKey := []byte(*key)
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
