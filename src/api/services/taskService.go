@@ -184,7 +184,6 @@ func (ts *TaskService) UpdateTask(c *fiber.Ctx) error {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 		Status      string `json:"status"`
-		// CompletedAt *primitive.DateTime `json:"completedAt"`
 	}
 
 	body := new(RequestBody)
