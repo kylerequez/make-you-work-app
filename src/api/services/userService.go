@@ -1,6 +1,7 @@
 package services
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -81,7 +82,6 @@ func (us *UserService) CreateUser(c *fiber.Ctx) error {
 		Email       string   `json:"email"`
 		Authorities []string `json:"authorities"`
 		Username    string   `json:"username"`
-		Password    string   `json:"password"`
 	}
 
 	body := new(RequestBody)
@@ -91,22 +91,10 @@ func (us *UserService) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	// NOTE: TO IMPLEMENT GENERATED PASSWORD THEN SENDING TO EMAIL
-	// password, err := utils.GenerateNewPassword()
-	// if err != nil {
-	// 	return c.Status(http.StatusInternalServerError).JSON(&UserErrorResponse{
-	// 		Error: err.Error(),
-	// 	})
-	// }
+	password := utils.GenerateNewPassword()
+	log.Println("Generated Password:", password)
 
-	// hashedPassword, err := utils.HashPassword([]byte(password))
-	// if err != nil {
-	// 	return c.Status(http.StatusBadRequest).JSON(&UserErrorResponse{
-	// 		Error: err.Error(),
-	// 	})
-	// }
-
-	hashedPassword, err := utils.HashPassword([]byte(body.Password))
+	hashedPassword, err := utils.HashPassword([]byte(password))
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(&UserErrorResponse{
 			Error: err.Error(),
@@ -120,7 +108,7 @@ func (us *UserService) CreateUser(c *fiber.Ctx) error {
 		Lastname:    body.Lastname,
 		Username:    body.Username,
 		Authorities: body.Authorities,
-		Status:      utils.USER_STATUS["NOT_VERIFIED"],
+		Status:      utils.USER_STATUS["VERIFIED"],
 		Email:       body.Email,
 		Password:    hashedPassword,
 		CreatedAt:   primitive.NewDateTimeFromTime(currentTime),
@@ -130,6 +118,17 @@ func (us *UserService) CreateUser(c *fiber.Ctx) error {
 	result, err := us.ur.CreateUser(user)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(&UserErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	data := map[string]string{
+		"Password": password,
+	}
+
+	err = utils.SendEmail("Make You Work App Account Registration", "realkylerequez@gmail.com", []string{body.Email}, nil, "creation.html", data)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(&UserErrorResponse{
 			Error: err.Error(),
 		})
 	}
@@ -210,6 +209,7 @@ func (us *UserService) UpdateUser(c *fiber.Ctx) error {
 	})
 }
 
+// NOTE: ADD FUNCTIONALITY SO THAT WHEN A USER HAS BEEN DELETED, THE TASKS ARE ALSO DELETED
 func (us *UserService) DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {

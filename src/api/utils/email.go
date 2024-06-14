@@ -98,3 +98,4 @@ func ParseHTML(filename string, data any) (string, error) {
 
 	return body.String(), nil
 }
+

@@ -4,50 +4,35 @@ import (
 	"errors"
 	"math/rand"
 	"strings"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-const (
-	letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	symbolBytes = "!@#$%^&*()-_=+[{]};:'\",<.>/? "
-	numberBytes = "0123456789"
-	allCharSet  = letterBytes + symbolBytes + numberBytes
-)
+const numberOfChar = 10
 
-func GenerateNewPassword() ([]byte, error) {
-	numberOfChar := 10
-	charSet := allCharSet
+func GenerateNewPassword() string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{};':,.<>/?")
 
-	b := make([]byte, numberOfChar)
-	var err error
-
-	rand.Seed(time.Now().UnixNano())
-	for i := range b {
-		b[i] = charSet[rand.Intn(len(charSet))]
+	s := make([]rune, numberOfChar)
+	for i := range s {
+		s[i] = letters[rand.Intn(len(letters))]
 	}
-
-	_, err = rand.Read(b)
-	if err != nil {
-		return nil, err
-	}
-	return b, nil
+	return string(s)
 }
 
 func HashPassword(password []byte) ([]byte, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword(password, 8)
+	hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 	return hashedPassword, nil
 }
 
-func ValidatePassword(password []byte, hashedPassword []byte) error {
+func ValidatePassword(password, hashedPassword []byte) error {
 	return bcrypt.CompareHashAndPassword(hashedPassword, password)
 }
 
-func ComparePassword(password string, confirmPassword string) error {
+func ComparePassword(password, confirmPassword string) error {
 	isPasswordSame := strings.Compare(password, confirmPassword)
 	switch isPasswordSame {
 	case 0:
